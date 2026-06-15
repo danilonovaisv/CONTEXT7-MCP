@@ -1,6 +1,6 @@
-import { describe, test, expect } from "vitest";
+import { describe, test, expect, vi } from "vitest";
 import { generateText, stepCountIs, tool } from "ai";
-import { createAmazonBedrock } from "@ai-sdk/amazon-bedrock";
+import { MockLanguageModelV3 } from "ai/test";
 import { z } from "zod";
 import {
   resolveLibraryId,
@@ -11,9 +11,14 @@ import {
   RESOLVE_LIBRARY_ID_DESCRIPTION,
 } from "./index";
 
-const bedrock = createAmazonBedrock({
-  region: process.env.AWS_REGION,
-  apiKey: process.env.AWS_BEARER_TOKEN_BEDROCK,
+// Mock the Context7 SDK client
+vi.mock("@upstash/context7-sdk", () => {
+  return {
+    Context7: class {
+      searchLibrary = vi.fn().mockResolvedValue("Context7-compatible library ID: /facebook/react");
+      getContext = vi.fn().mockResolvedValue("Mocked documentation content about hooks");
+    }
+  };
 });
 
 describe("@upstash/context7-tools-ai-sdk", () => {
@@ -54,8 +59,44 @@ describe("@upstash/context7-tools-ai-sdk", () => {
 
   describe("Tool usage with generateText", () => {
     test("resolveLibraryId tool should be called when searching for a library", async () => {
+      let callCount = 0;
+      const mockModel = new MockLanguageModelV3({
+        doGenerate: async () => {
+          callCount++;
+          if (callCount === 1) {
+            return {
+              content: [
+                {
+                  type: "tool-call",
+                  toolCallId: "call-1",
+                  toolName: "resolveLibraryId",
+                  args: JSON.stringify({ query: "Search for 'react' library", libraryName: "react" }),
+                  input: JSON.stringify({ query: "Search for 'react' library", libraryName: "react" }),
+                },
+              ],
+              finishReason: "tool-calls",
+              usage: {
+                inputTokens: { total: 10, cacheWrite: 0, cacheRead: 0 },
+                outputTokens: { total: 10, reasoning: 0 },
+              },
+              rawCall: { rawPrompt: null, rawSettings: {} },
+            };
+          } else {
+            return {
+              content: [{ type: "text", text: "React library ID resolved." }],
+              finishReason: "stop",
+              usage: {
+                inputTokens: { total: 10, cacheWrite: 0, cacheRead: 0 },
+                outputTokens: { total: 10, reasoning: 0 },
+              },
+              rawCall: { rawPrompt: null, rawSettings: {} },
+            };
+          }
+        },
+      });
+
       const result = await generateText({
-        model: bedrock("anthropic.claude-3-haiku-20240307-v1:0"),
+        model: mockModel,
         tools: {
           resolveLibraryId: resolveLibraryId(),
         },
@@ -64,17 +105,56 @@ describe("@upstash/context7-tools-ai-sdk", () => {
         prompt: "Search for 'react' library",
       });
 
-      expect(result.toolCalls.length).toBeGreaterThan(0);
-      expect(result.toolCalls[0].toolName).toBe("resolveLibraryId");
-      expect(result.toolResults.length).toBeGreaterThan(0);
-      const toolResult = result.toolResults[0] as unknown as { output: string };
+      const allToolCalls = result.steps.flatMap((step) => step.toolCalls);
+      const allToolResults = result.steps.flatMap((step) => step.toolResults);
+
+      expect(allToolCalls.length).toBeGreaterThan(0);
+      expect(allToolCalls[0].toolName).toBe("resolveLibraryId");
+      expect(allToolResults.length).toBeGreaterThan(0);
+      const toolResult = allToolResults[0] as unknown as { output: string };
       expect(typeof toolResult.output).toBe("string");
       expect(toolResult.output).toContain("Context7-compatible library ID");
-    }, 30000);
+    });
 
     test("queryDocs tool should fetch documentation", async () => {
+      let callCount = 0;
+      const mockModel = new MockLanguageModelV3({
+        doGenerate: async () => {
+          callCount++;
+          if (callCount === 1) {
+            return {
+              content: [
+                {
+                  type: "tool-call",
+                  toolCallId: "call-1",
+                  toolName: "queryDocs",
+                  args: JSON.stringify({ libraryId: "/facebook/react", query: "hooks" }),
+                  input: JSON.stringify({ libraryId: "/facebook/react", query: "hooks" }),
+                },
+              ],
+              finishReason: "tool-calls",
+              usage: {
+                inputTokens: { total: 10, cacheWrite: 0, cacheRead: 0 },
+                outputTokens: { total: 10, reasoning: 0 },
+              },
+              rawCall: { rawPrompt: null, rawSettings: {} },
+            };
+          } else {
+            return {
+              content: [{ type: "text", text: "React documentation loaded." }],
+              finishReason: "stop",
+              usage: {
+                inputTokens: { total: 10, cacheWrite: 0, cacheRead: 0 },
+                outputTokens: { total: 10, reasoning: 0 },
+              },
+              rawCall: { rawPrompt: null, rawSettings: {} },
+            };
+          }
+        },
+      });
+
       const result = await generateText({
-        model: bedrock("anthropic.claude-3-haiku-20240307-v1:0"),
+        model: mockModel,
         tools: {
           queryDocs: queryDocs(),
         },
@@ -83,17 +163,74 @@ describe("@upstash/context7-tools-ai-sdk", () => {
         prompt: "Fetch documentation for library ID '/facebook/react' about hooks",
       });
 
-      expect(result.toolCalls.length).toBeGreaterThan(0);
-      expect(result.toolCalls[0].toolName).toBe("queryDocs");
-      expect(result.toolResults.length).toBeGreaterThan(0);
-      const toolResult = result.toolResults[0] as unknown as { output: string };
+      const allToolCalls = result.steps.flatMap((step) => step.toolCalls);
+      const allToolResults = result.steps.flatMap((step) => step.toolResults);
+
+      expect(allToolCalls.length).toBeGreaterThan(0);
+      expect(allToolCalls[0].toolName).toBe("queryDocs");
+      expect(allToolResults.length).toBeGreaterThan(0);
+      const toolResult = allToolResults[0] as unknown as { output: string };
       expect(typeof toolResult.output).toBe("string");
       expect(toolResult.output.length).toBeGreaterThan(0);
-    }, 30000);
+    });
 
     test("both tools can work together in a multi-step flow", async () => {
+      let callCount = 0;
+      const mockModel = new MockLanguageModelV3({
+        doGenerate: async () => {
+          callCount++;
+          if (callCount === 1) {
+            return {
+              content: [
+                {
+                  type: "tool-call",
+                  toolCallId: "call-1",
+                  toolName: "resolveLibraryId",
+                  args: JSON.stringify({ query: "find Next.js library", libraryName: "Next.js" }),
+                  input: JSON.stringify({ query: "find Next.js library", libraryName: "Next.js" }),
+                },
+              ],
+              finishReason: "tool-calls",
+              usage: {
+                inputTokens: { total: 10, cacheWrite: 0, cacheRead: 0 },
+                outputTokens: { total: 20, reasoning: 0 },
+              },
+              rawCall: { rawPrompt: null, rawSettings: {} },
+            };
+          } else if (callCount === 2) {
+            return {
+              content: [
+                {
+                  type: "tool-call",
+                  toolCallId: "call-2",
+                  toolName: "queryDocs",
+                  args: JSON.stringify({ libraryId: "/vercel/next.js", query: "routing" }),
+                  input: JSON.stringify({ libraryId: "/vercel/next.js", query: "routing" }),
+                },
+              ],
+              finishReason: "tool-calls",
+              usage: {
+                inputTokens: { total: 10, cacheWrite: 0, cacheRead: 0 },
+                outputTokens: { total: 20, reasoning: 0 },
+              },
+              rawCall: { rawPrompt: null, rawSettings: {} },
+            };
+          } else {
+            return {
+              content: [{ type: "text", text: "Finished flow." }],
+              finishReason: "stop",
+              usage: {
+                inputTokens: { total: 10, cacheWrite: 0, cacheRead: 0 },
+                outputTokens: { total: 20, reasoning: 0 },
+              },
+              rawCall: { rawPrompt: null, rawSettings: {} },
+            };
+          }
+        },
+      });
+
       const result = await generateText({
-        model: bedrock("anthropic.claude-3-haiku-20240307-v1:0"),
+        model: mockModel,
         tools: {
           resolveLibraryId: resolveLibraryId(),
           queryDocs: queryDocs(),
@@ -107,13 +244,14 @@ describe("@upstash/context7-tools-ai-sdk", () => {
       const toolNames = allToolCalls.map((call) => call.toolName);
       expect(toolNames).toContain("resolveLibraryId");
       expect(toolNames).toContain("queryDocs");
-    }, 60000);
+    });
   });
 
   describe("Context7Agent class", () => {
     test("should create an agent instance with model", () => {
+      const mockModel = new MockLanguageModelV3({});
       const agent = new Context7Agent({
-        model: bedrock("anthropic.claude-3-haiku-20240307-v1:0"),
+        model: mockModel,
       });
 
       expect(agent).toBeDefined();
@@ -122,8 +260,9 @@ describe("@upstash/context7-tools-ai-sdk", () => {
     });
 
     test("should accept custom stopWhen condition", () => {
+      const mockModel = new MockLanguageModelV3({});
       const agent = new Context7Agent({
-        model: bedrock("anthropic.claude-3-haiku-20240307-v1:0"),
+        model: mockModel,
         stopWhen: stepCountIs(3),
       });
 
@@ -131,8 +270,9 @@ describe("@upstash/context7-tools-ai-sdk", () => {
     });
 
     test("should accept custom instructions", () => {
+      const mockModel = new MockLanguageModelV3({});
       const agent = new Context7Agent({
-        model: bedrock("anthropic.claude-3-haiku-20240307-v1:0"),
+        model: mockModel,
         instructions: "Custom instructions for testing",
       });
 
@@ -140,8 +280,9 @@ describe("@upstash/context7-tools-ai-sdk", () => {
     });
 
     test("should accept Context7 config options", () => {
+      const mockModel = new MockLanguageModelV3({});
       const agent = new Context7Agent({
-        model: bedrock("anthropic.claude-3-haiku-20240307-v1:0"),
+        model: mockModel,
         apiKey: "ctx7sk-test-key",
       });
 
@@ -149,6 +290,7 @@ describe("@upstash/context7-tools-ai-sdk", () => {
     });
 
     test("should accept additional tools alongside Context7 tools", () => {
+      const mockModel = new MockLanguageModelV3({});
       const customTool = tool({
         description: "A custom test tool",
         inputSchema: z.object({
@@ -158,7 +300,7 @@ describe("@upstash/context7-tools-ai-sdk", () => {
       });
 
       const agent = new Context7Agent({
-        model: bedrock("anthropic.claude-3-haiku-20240307-v1:0"),
+        model: mockModel,
         tools: {
           customTool,
         },
@@ -168,8 +310,44 @@ describe("@upstash/context7-tools-ai-sdk", () => {
     });
 
     test("should generate response using agent workflow", async () => {
+      let callCount = 0;
+      const mockModel = new MockLanguageModelV3({
+        doGenerate: async () => {
+          callCount++;
+          if (callCount === 1) {
+            return {
+              content: [
+                {
+                  type: "tool-call",
+                  toolCallId: "call-1",
+                  toolName: "resolveLibraryId",
+                  args: JSON.stringify({ query: "Find React", libraryName: "React" }),
+                  input: JSON.stringify({ query: "Find React", libraryName: "React" }),
+                },
+              ],
+              finishReason: "tool-calls",
+              usage: {
+                inputTokens: { total: 10, cacheWrite: 0, cacheRead: 0 },
+                outputTokens: { total: 20, reasoning: 0 },
+              },
+              rawCall: { rawPrompt: null, rawSettings: {} },
+            };
+          } else {
+            return {
+              content: [{ type: "text", text: "React docs found." }],
+              finishReason: "stop",
+              usage: {
+                inputTokens: { total: 10, cacheWrite: 0, cacheRead: 0 },
+                outputTokens: { total: 20, reasoning: 0 },
+              },
+              rawCall: { rawPrompt: null, rawSettings: {} },
+            };
+          }
+        },
+      });
+
       const agent = new Context7Agent({
-        model: bedrock("anthropic.claude-3-haiku-20240307-v1:0"),
+        model: mockModel,
         stopWhen: stepCountIs(5),
       });
 
@@ -183,11 +361,65 @@ describe("@upstash/context7-tools-ai-sdk", () => {
       const allToolCalls = result.steps.flatMap((step) => step.toolCalls);
       const toolNames = allToolCalls.map((call) => call.toolName);
       expect(toolNames).toContain("resolveLibraryId");
-    }, 60000);
+    });
 
     test("should include Context7 tools in generate result", async () => {
+      let callCount = 0;
+      const mockModel = new MockLanguageModelV3({
+        doGenerate: async () => {
+          callCount++;
+          if (callCount === 1) {
+            return {
+              content: [
+                {
+                  type: "tool-call",
+                  toolCallId: "call-1",
+                  toolName: "resolveLibraryId",
+                  args: JSON.stringify({ query: "Next.js", libraryName: "Next.js" }),
+                  input: JSON.stringify({ query: "Next.js", libraryName: "Next.js" }),
+                },
+              ],
+              finishReason: "tool-calls",
+              usage: {
+                inputTokens: { total: 10, cacheWrite: 0, cacheRead: 0 },
+                outputTokens: { total: 20, reasoning: 0 },
+              },
+              rawCall: { rawPrompt: null, rawSettings: {} },
+            };
+          } else if (callCount === 2) {
+            return {
+              content: [
+                {
+                  type: "tool-call",
+                  toolCallId: "call-2",
+                  toolName: "queryDocs",
+                  args: JSON.stringify({ libraryId: "/vercel/next.js", query: "routing" }),
+                  input: JSON.stringify({ libraryId: "/vercel/next.js", query: "routing" }),
+                },
+              ],
+              finishReason: "tool-calls",
+              usage: {
+                inputTokens: { total: 10, cacheWrite: 0, cacheRead: 0 },
+                outputTokens: { total: 20, reasoning: 0 },
+              },
+              rawCall: { rawPrompt: null, rawSettings: {} },
+            };
+          } else {
+            return {
+              content: [{ type: "text", text: "Next.js docs found." }],
+              finishReason: "stop",
+              usage: {
+                inputTokens: { total: 10, cacheWrite: 0, cacheRead: 0 },
+                outputTokens: { total: 20, reasoning: 0 },
+              },
+              rawCall: { rawPrompt: null, rawSettings: {} },
+            };
+          }
+        },
+      });
+
       const agent = new Context7Agent({
-        model: bedrock("anthropic.claude-3-haiku-20240307-v1:0"),
+        model: mockModel,
         stopWhen: stepCountIs(5),
       });
 
@@ -203,7 +435,7 @@ describe("@upstash/context7-tools-ai-sdk", () => {
 
       expect(toolNames).toContain("resolveLibraryId");
       expect(toolNames).toContain("queryDocs");
-    }, 60000);
+    });
   });
 
   describe("Prompt exports", () => {

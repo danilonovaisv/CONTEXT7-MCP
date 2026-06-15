@@ -1,0 +1,216 @@
+$ vitest run
+◇ injected env (15) from ../../.env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+
+[1m[46m RUN [49m[22m [36mv4.0.14 [39m[90m/Users/PROJETOS-DEV/CONTEXT7-MCP/packages/tools-ai-sdk[39m
+
+ [31m❯[39m src/index.test.ts [2m([22m[2m16 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[32m 47[2mms[22m[39m
+       [32m✓[39m resolveLibraryId() should return a tool object with correct structure[32m 1[2mms[22m[39m
+       [32m✓[39m queryDocs() should return a tool object with correct structure[32m 0[2mms[22m[39m
+       [32m✓[39m tools should accept custom config[32m 0[2mms[22m[39m
+[31m       [31m×[31m resolveLibraryId tool should be called when searching for a library[39m[32m 35[2mms[22m[39m
+[31m       [31m×[31m queryDocs tool should fetch documentation[39m[32m 3[2mms[22m[39m
+       [32m✓[39m both tools can work together in a multi-step flow[32m 1[2mms[22m[39m
+       [32m✓[39m should create an agent instance with model[32m 0[2mms[22m[39m
+       [32m✓[39m should accept custom stopWhen condition[32m 0[2mms[22m[39m
+       [32m✓[39m should accept custom instructions[32m 1[2mms[22m[39m
+       [32m✓[39m should accept Context7 config options[32m 0[2mms[22m[39m
+       [32m✓[39m should accept additional tools alongside Context7 tools[32m 0[2mms[22m[39m
+       [32m✓[39m should generate response using agent workflow[32m 2[2mms[22m[39m
+       [32m✓[39m should include Context7 tools in generate result[32m 1[2mms[22m[39m
+       [32m✓[39m should export SYSTEM_PROMPT[32m 0[2mms[22m[39m
+       [32m✓[39m should export AGENT_PROMPT[32m 0[2mms[22m[39m
+       [32m✓[39m should export RESOLVE_LIBRARY_ID_DESCRIPTION[32m 0[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 2 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m src/index.test.ts[2m > [22m@upstash/context7-tools-ai-sdk[2m > [22mTool usage with generateText[2m > [22mresolveLibraryId tool should be called when searching for a library
+[31m[1mError[22m: RESULT IS: {
+  "steps": [
+    {
+      "content": [
+        {
+          "type": "tool-call",
+          "toolCallId": "call-1",
+          "toolName": "resolveLibraryId",
+          "input": {
+            "query": "Search for 'react' library",
+            "libraryName": "react"
+          }
+        },
+        {
+          "type": "tool-result",
+          "toolCallId": "call-1",
+          "toolName": "resolveLibraryId",
+          "input": {
+            "query": "Search for 'react' library",
+            "libraryName": "react"
+          },
+          "output": "Context7-compatible library ID: /facebook/react",
+          "dynamic": false
+        }
+      ],
+      "usage": {
+        "inputTokens": 10,
+        "inputTokenDetails": {
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        },
+        "outputTokens": 10,
+        "outputTokenDetails": {
+          "reasoningTokens": 0
+        },
+        "totalTokens": 20,
+        "reasoningTokens": 0,
+        "cachedInputTokens": 0
+      },
+      "request": {},
+      "response": {
+        "id": "aitxt-1klbcjJNuzewx6UXJj1FNMpo",
+        "timestamp": "2026-06-15T08:01:24.581Z",
+        "modelId": "mock-model-id",
+        "messages": [
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "tool-call",
+                "toolCallId": "call-1",
+                "toolName": "resolveLibraryId",
+                "input": {
+                  "query": "Search for 'react' library",
+                  "libraryName": "react"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "content": [
+              {
+                "type": "tool-result",
+                "toolCallId": "call-1",
+                "toolName": "resolveLibraryId",
+                "output": {
+                  "type": "text",
+                  "value": "Context7-compatible library ID: /facebook/react"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "React library ID resolved."
+        }
+      ],
+      "usage": {
+        "inputTokens": 10,
+        "inputTokenDetails": {
+          "cacheReadTokens": 0,
+          "cacheWriteTokens": 0
+        },
+        "outputTokens": 10,
+        "outputTokenDetails": {
+          "reasoningTokens": 0
+        },
+        "totalTokens": 20,
+        "reasoningTokens": 0,
+        "cachedInputTokens": 0
+      },
+      "request": {},
+      "response": {
+        "id": "aitxt-lpkt58bclNjok58vmmNeGiej",
+        "timestamp": "2026-06-15T08:01:24.584Z",
+        "modelId": "mock-model-id",
+        "messages": [
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "tool-call",
+                "toolCallId": "call-1",
+                "toolName": "resolveLibraryId",
+                "input": {
+                  "query": "Search for 'react' library",
+                  "libraryName": "react"
+                }
+              }
+            ]
+          },
+          {
+            "role": "tool",
+            "content": [
+              {
+                "type": "tool-result",
+                "toolCallId": "call-1",
+                "toolName": "resolveLibraryId",
+                "output": {
+                  "type": "text",
+                  "value": "Context7-compatible library ID: /facebook/react"
+                }
+              }
+            ]
+          },
+          {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "React library ID resolved."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "totalUsage": {
+    "inputTokens": 20,
+    "inputTokenDetails": {
+      "cacheReadTokens": 0,
+      "cacheWriteTokens": 0
+    },
+    "outputTokens": 20,
+    "outputTokenDetails": {
+      "reasoningTokens": 0
+    },
+    "totalTokens": 40,
+    "reasoningTokens": 0,
+    "cachedInputTokens": 0
+  }
+}[39m
+[36m [2m❯[22m src/index.test.ts:[2m115:13[22m[39m
+    [90m113| [39m        }
+    [90m114| [39m      }
+    [90m115| [39m      [35mthrow[39m [35mnew[39m [33mError[39m([32m"RESULT IS: "[39m [33m+[39m [33mJSON[39m[33m.[39m[34mstringify[39m(result[33m,[39m [35mnull[39m[33m,[39m [34m2[39m))[33m;[39m
+    [90m   | [39m            [31m^[39m
+    [90m116| [39m
+    [90m117| [39m      [34mexpect[39m(result[33m.[39mtoolCalls[33m.[39mlength)[33m.[39m[34mtoBeGreaterThan[39m([34m0[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/index.test.ts[2m > [22m@upstash/context7-tools-ai-sdk[2m > [22mTool usage with generateText[2m > [22mqueryDocs tool should fetch documentation
+[31m[1mAssertionError[22m: expected 0 to be greater than 0[39m
+[36m [2m❯[22m src/index.test.ts:[2m180:39[22m[39m
+    [90m178| [39m      }
+    [90m179| [39m
+    [90m180| [39m      [34mexpect[39m(result[33m.[39mtoolCalls[33m.[39mlength)[33m.[39m[34mtoBeGreaterThan[39m([34m0[39m)[33m;[39m
+    [90m   | [39m                                      [31m^[39m
+    [90m181| [39m      [34mexpect[39m(result[33m.[39mtoolCalls[[34m0[39m][33m.[39mtoolName)[33m.[39m[34mtoBe[39m([32m"queryDocs"[39m)[33m;[39m
+    [90m182| [39m      [34mexpect[39m(result[33m.[39mtoolResults[33m.[39mlength)[33m.[39m[34mtoBeGreaterThan[39m([34m0[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m14 passed[39m[22m[90m (16)[39m
+[2m   Start at [22m 05:01:24
+[2m   Duration [22m 399ms[2m (transform 86ms, setup 0ms, import 190ms, tests 47ms, environment 0ms)[22m
+
+/Users/PROJETOS-DEV/CONTEXT7-MCP/packages/tools-ai-sdk:
+[ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL] @upstash/context7-tools-ai-sdk@0.2.3 test: `vitest run`
+Exit status 1
