@@ -561,17 +561,14 @@ app.get("/ping", (_req: express.Request, res: express.Response) => {
 
 // OAuth 2.0 Protected Resource Metadata (RFC 9728)
 // Used by MCP clients to discover the authorization server
-app.get(
-  "/.well-known/oauth-protected-resource",
-  (_req: express.Request, res: express.Response) => {
-    res.json({
-      resource: RESOURCE_URL,
-      authorization_servers: [AUTH_SERVER_URL],
-      scopes_supported: ["profile", "email"],
-      bearer_methods_supported: ["header"],
-    });
-  }
-);
+app.get("/.well-known/oauth-protected-resource", (_req: express.Request, res: express.Response) => {
+  res.json({
+    resource: RESOURCE_URL,
+    authorization_servers: [AUTH_SERVER_URL],
+    scopes_supported: ["profile", "email"],
+    bearer_methods_supported: ["header"],
+  });
+});
 
 app.get(
   "/.well-known/oauth-authorization-server",
@@ -600,18 +597,15 @@ app.get(
 );
 
 // OpenAI Apps SDK domain verification challenge
-app.get(
-  "/.well-known/openai-apps-challenge",
-  (_req: express.Request, res: express.Response) => {
-    if (!OPENAI_APPS_CHALLENGE_TOKEN) {
-      return res.status(404).json({
-        error: "not_found",
-        message: "Endpoint not found.",
-      });
-    }
-    res.type("text/plain").send(OPENAI_APPS_CHALLENGE_TOKEN);
+app.get("/.well-known/openai-apps-challenge", (_req: express.Request, res: express.Response) => {
+  if (!OPENAI_APPS_CHALLENGE_TOKEN) {
+    return res.status(404).json({
+      error: "not_found",
+      message: "Endpoint not found.",
+    });
   }
-);
+  res.type("text/plain").send(OPENAI_APPS_CHALLENGE_TOKEN);
+});
 
 // Catch-all 404 handler - must be after all other routes
 app.use((_req: express.Request, res: express.Response) => {
